@@ -17,20 +17,53 @@ moneyscript.GREEN = string.char(169).."000255000";
 -----------------------
 --     VARIABLES     -- 
 -----------------------
-moneyscript.playersHudtxts = {};
+moneyscript.playersHudTxts = {};
 
 ----------------------------------------------------------------------
 -- StartRound Hook Implementation                                   --
 --                                                                  --
 -- @param mode start/end mode id                                    --
 ----------------------------------------------------------------------
+addhook("startround", "moneyscript.onStartRound");
 function moneyscript.onStartRound(mode)
 	--[[ 
-		For each player alive, the script clears the previous hudtxt
-		if possible, and then displays the current player money
+		For each player alive, the script resets the players arrays
+		then the script displays the other players money if
+		they are in the same team starting from the center of the 
+		screen. Finally, all texts will be removed at the end of the
+		freeze time.
 	]]--
 
+	if(tonumber(game("mp_freezetime")) > 0) then
+		
+		local winX, winY = 320, 240;
 
+		for _, id in pairs(player(0, "tableliving")) do
+			moneyscript.playersHudTxts[id] = {};
+			for __, iid in pairs(player(0, "tableliving")) do
+				if(player(id, "team") == player(iid, "team")) then
+					winX = 320;
+					winY = 240;
+					winX = winX - math.floor(player(id, "x") - player(iid, "x"));
+					winY = winY - math.floor(player(id, "y") - player(iid, "y"));
+					moneyscript.playersHudTxts[id][iid] =
+						moneyscript.hudtxt2(id, iid, player(iid, "money").."$",winX, winY - 32);
+				end
+			end
+		end
+
+		addhook("buy", "moneyscript.onBuy");
+		timer((tonumber(game("mp_freezetime"))) * 1000, "moneyscript.freezeTimeEnd", 
+			"", 1);
+	end
+end
+
+----------------------------------------------------------------------
+-- When freeze time ends                                            --
+----------------------------------------------------------------------
+function moneyscript.freezeTimeEnd()
+	freehook("buy", "moneyscript.onBuy");
+	moneyscript.clearAllTxts();
 end
 
 ----------------------------------------------------------------------
@@ -43,6 +76,18 @@ function moneyscript.onBuy(id, weapon)
 	--[[ 
 		If a player buys a weapon, his hudtxt is updated
 	]]--
+	local team = player(id, "team");
+	local players;
+
+	if(team == 1) then
+		players = player(0, "team1living");
+	else
+		players = player(0, "team2living");
+	end
+
+	for _, pid in pairs(players) do
+		moneyscript.updatehudtxt2(pid, id, player(id, "money").."$");
+	end
 end
 
 ----------------------------------------------------------------------
@@ -61,8 +106,8 @@ function moneyscript.hudtxt2(pid, id, text, x, y, align)
 	local color = moneyscript.YELLOW;
 	local money;
 
-	if(text:match("%d+")) then
-		money = tonumber(text:match("(%d+)"));
+	if(tostring(text):match("%d+")) then
+		money = tonumber(tostring(text):match("(%d+)"));
 		if(player(id, "team") == 1) then
 			if(money < 1000) then
 				color = moneyscript.RED;
@@ -92,10 +137,40 @@ end
 --                                                                  --
 -- @param pid id of a player                                        --
 -- @param id internal text id                                       --
--- @param text the text you want to display                         --
 ----------------------------------------------------------------------
 function moneyscript.clearhudtxt2(pid, id)
 	parse('hudtxt2 '..pid..' '..id);
+end
+
+----------------------------------------------------------------------
+-- Updates the specied hud txt of a player                          --
+--                                                                  --
+-- @param pid id of a player                                        --
+-- @param id internal text id                                       --
+----------------------------------------------------------------------
+function moneyscript.updatehudtxt2(pid, id, text)
+	if(moneyscript.playersHudTxts[pid][id]) then
+		local winX, winY = 320, 240;
+		winX = winX - math.floor(player(pid, "x") - player(id, "x"));
+		winY = winY - math.floor(player(pid, "y") - player(id, "y"));
+		moneyscript.playersHudTxts[pid][id] = 
+			moneyscript.hudtxt2(pid, id, text, winX, winY - 32);
+	end
+end
+
+----------------------------------------------------------------------
+-- Removes all player hud txts                                      --
+----------------------------------------------------------------------
+function moneyscript.clearAllTxts()
+	for _, id in pairs(player(0, "tableliving")) do 
+		if(moneyscript.playersHudTxts[id]) then
+			for __, tid in pairs(moneyscript.playersHudTxts[id]) do
+				if(moneyscript.playersHudTxts[id][tid]) then
+					moneyscript.clearhudtxt2(id, tid);
+				end
+			end
+		end
+	end
 end
 
 ----------------------------------------------------------------------
@@ -123,6 +198,17 @@ function moneyscript.onLeave(id)
 	moneyscript.playersHudTxts[id] = nil;
 end
 
-
+----------------------------------------------------------------------
+-- Returns the distance between 2 objects                           --
+--                                                                  --
+-- @param x1 object one x position                                  --
+-- @param y1 object one y position                                  --
+-- @param x2 object two x position                                  --
+-- @param y2 object two y position                                  --
+-- @return the distance betwenn the 2 objects                       --
+----------------------------------------------------------------------
+function moneyscript.getDist(x1, y1, x2, y2)
+	return math.sqrt((y2 - y1) ^ 2 + (x2 - x1) ^ 2);
+end
 
 
