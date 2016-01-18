@@ -71,6 +71,11 @@ end
 -- ms100 function                                                   --
 ----------------------------------------------------------------------
 function moneyscript.ms100()
+	--[[
+		Using this way, instead of buy hook which leaded to some 
+		problems
+	]]--
+
 	for _, pid in pairs(player(0, "tableliving")) do
 		for __, id in pairs(player(0, "tableliving")) do
 			if(player(pid, "team") == player(id, "team")) then
@@ -92,6 +97,11 @@ end
 -- @return the text id                                              --
 ----------------------------------------------------------------------
 function moneyscript.hudtxt2(pid, id, text, x, y, align)
+	--[[
+		Fixing alignment, sets the color depending on the player 
+		money and finally displays the text
+	]]--
+
 	if(not align) then align = 1; end
 	local color = moneyscript.YELLOW;
 	local money;
@@ -169,6 +179,7 @@ function moneyscript.clearPlayerTxt(id)
 		If there is a text on the player screen, we iterate over all of
 		them, then we clear them.
 	]]--
+	
 	if(moneyscript.playersHudTxts[id]) then
 		for _, tid in pairs(moneyscript.playersHudTxts[id]) do
 			moneyscript.clearhudtxt2(id, tid);
@@ -178,7 +189,8 @@ function moneyscript.clearPlayerTxt(id)
 end
 
 ----------------------------------------------------------------------
--- Removes the specified hudtxt from others players                 --
+-- Removes the specified hudtxt from others players including       --
+-- himself                                                          --
 --                                                                  --
 -- @param id player id                                              --
 ----------------------------------------------------------------------
@@ -205,8 +217,7 @@ function moneyscript.onLeave(id)
 		If a player leaves the server then the script removes his
 		txt from him and from other players
 	]]--
+
 	moneyscript.clearPlayerFromOthers(id);
 	moneyscript.playersHudTxts[id] = nil;
 end
-
-
