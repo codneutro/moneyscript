@@ -35,13 +35,14 @@ function moneyscript.onStartRound(mode)
 	]]--
 
 	if(tonumber(game("mp_freezetime")) > 0) then
-		
 		local winX, winY = 320, 240;
 
+		addhook("buy", "moneyscript.onBuy");
 		for _, id in pairs(player(0, "tableliving")) do
 			moneyscript.playersHudTxts[id] = {};
 			for __, iid in pairs(player(0, "tableliving")) do
-				if(player(id, "team") == player(iid, "team")) then
+				if(player(id, "team") == player(iid, "team") and
+					id ~= iid) then
 					winX = 320;
 					winY = 240;
 					winX = winX - math.floor(player(id, "x") - player(iid, "x"));
@@ -52,7 +53,6 @@ function moneyscript.onStartRound(mode)
 			end
 		end
 
-		addhook("buy", "moneyscript.onBuy");
 		timer((tonumber(game("mp_freezetime"))) * 1000, "moneyscript.freezeTimeEnd", 
 			"", 1);
 	end
@@ -86,8 +86,12 @@ function moneyscript.onBuy(id, weapon)
 	end
 
 	for _, pid in pairs(players) do
-		moneyscript.updatehudtxt2(pid, id, player(id, "money").."$");
+		if(pid ~= id) then
+			moneyscript.updatehudtxt2(pid, id, player(id, "money").."$");
+		end
 	end
+
+	return 0;
 end
 
 ----------------------------------------------------------------------
