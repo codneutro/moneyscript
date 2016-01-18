@@ -133,7 +133,7 @@ function moneyscript.hudtxt2(pid, id, text, x, y, align)
 end
 
 ----------------------------------------------------------------------
--- Removes the specied hud txt of a player                          --
+-- Removes the specified hud txt of a player                        --
 --                                                                  --
 -- @param pid id of a player                                        --
 -- @param id internal text id                                       --
@@ -143,7 +143,7 @@ function moneyscript.clearhudtxt2(pid, id)
 end
 
 ----------------------------------------------------------------------
--- Updates the specied hud txt of a player                          --
+-- Updates the specified hud txt of a player                        --
 --                                                                  --
 -- @param pid id of a player                                        --
 -- @param id internal text id                                       --
