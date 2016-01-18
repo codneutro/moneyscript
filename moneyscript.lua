@@ -37,12 +37,12 @@ function moneyscript.onStartRound(mode)
 	if(tonumber(game("mp_freezetime")) > 0) then
 		local winX, winY = 320, 240;
 
-		addhook("buy", "moneyscript.onBuy");
+		addhook("ms100", "moneyscript.ms100");
+		addhook("leave", "moneyscript.onLeave");
 		for _, id in pairs(player(0, "tableliving")) do
 			moneyscript.playersHudTxts[id] = {};
 			for __, iid in pairs(player(0, "tableliving")) do
-				if(player(id, "team") == player(iid, "team") and
-					id ~= iid) then
+				if(player(id, "team") == player(iid, "team")) then
 					winX = 320;
 					winY = 240;
 					winX = winX - math.floor(player(id, "x") - player(iid, "x"));
@@ -62,36 +62,22 @@ end
 -- When freeze time ends                                            --
 ----------------------------------------------------------------------
 function moneyscript.freezeTimeEnd()
-	freehook("buy", "moneyscript.onBuy");
+	freehook("ms100", "moneyscript.ms100");
+	freehook("leave", "moneyscript.onLeave");
 	moneyscript.clearAllTxts();
 end
 
 ----------------------------------------------------------------------
--- Buy Hook Implementation                                          --
---                                                                  --
--- @param id player id                                              --
--- @param weapon type id of requested weapon                        --
+-- ms100 function                                                   --
 ----------------------------------------------------------------------
-function moneyscript.onBuy(id, weapon)
-	--[[ 
-		If a player buys a weapon, his hudtxt is updated
-	]]--
-	local team = player(id, "team");
-	local players;
-
-	if(team == 1) then
-		players = player(0, "team1living");
-	else
-		players = player(0, "team2living");
-	end
-
-	for _, pid in pairs(players) do
-		if(pid ~= id) then
-			moneyscript.updatehudtxt2(pid, id, player(id, "money").."$");
+function moneyscript.ms100()
+	for _, pid in pairs(player(0, "tableliving")) do
+		for __, id in pairs(player(0, "tableliving")) do
+			if(player(pid, "team") == player(id, "team")) then
+				moneyscript.updatehudtxt2(pid, id, player(id, "money").."$");
+			end
 		end
 	end
-
-	return 0;
 end
 
 ----------------------------------------------------------------------
@@ -153,12 +139,14 @@ end
 -- @param id internal text id                                       --
 ----------------------------------------------------------------------
 function moneyscript.updatehudtxt2(pid, id, text)
-	if(moneyscript.playersHudTxts[pid][id]) then
-		local winX, winY = 320, 240;
-		winX = winX - math.floor(player(pid, "x") - player(id, "x"));
-		winY = winY - math.floor(player(pid, "y") - player(id, "y"));
-		moneyscript.playersHudTxts[pid][id] = 
-			moneyscript.hudtxt2(pid, id, text, winX, winY - 32);
+	if(moneyscript.playersHudTxts[pid]) then
+		if(moneyscript.playersHudTxts[pid][id]) then
+			local winX, winY = 320, 240;
+			winX = winX - math.floor(player(pid, "x") - player(id, "x"));
+			winY = winY - math.floor(player(pid, "y") - player(id, "y"));
+			moneyscript.playersHudTxts[pid][id] = 
+				moneyscript.hudtxt2(pid, id, text, winX, winY - 32);
+		end
 	end
 end
 
@@ -167,26 +155,44 @@ end
 ----------------------------------------------------------------------
 function moneyscript.clearAllTxts()
 	for _, id in pairs(player(0, "tableliving")) do 
-		if(moneyscript.playersHudTxts[id]) then
-			for __, tid in pairs(moneyscript.playersHudTxts[id]) do
-				if(moneyscript.playersHudTxts[id][tid]) then
-					moneyscript.clearhudtxt2(id, tid);
-				end
-			end
-		end
+		moneyscript.clearPlayerTxt(id);
 	end
 end
 
 ----------------------------------------------------------------------
--- Join Hook Implementation                                         --
+-- Removes all hud texts of the specified player                    --
 --                                                                  --
 -- @param id player id                                              --
 ----------------------------------------------------------------------
-function moneyscript.onJoin(id)
+function moneyscript.clearPlayerTxt(id)
 	--[[
-		If a new player arrives on the server, the script initialize
-		his txt value
+		If there is a text on the player screen, we iterate over all of
+		them, then we clear them.
 	]]--
+	if(moneyscript.playersHudTxts[id]) then
+		for _, tid in pairs(moneyscript.playersHudTxts[id]) do
+			moneyscript.clearhudtxt2(id, tid);
+		end
+		moneyscript.playersHudTxts[id] = nil;
+	end
+end
+
+----------------------------------------------------------------------
+-- Removes the specified hudtxt from others players                 --
+--                                                                  --
+-- @param id player id                                              --
+----------------------------------------------------------------------
+function moneyscript.clearPlayerFromOthers(id)
+	for _, pid in pairs(player(0, "tableliving")) do
+		if(player(id, "team") == player(pid, "team")) then
+			if(moneyscript.playersHudTxts[pid]) then
+				if(moneyscript.playersHudTxts[pid][id]) then
+					moneyscript.clearhudtxt2(pid, id);
+					moneyscript.playersHudTxts[pid][id] = nil;
+				end
+			end
+		end
+	end
 end
 
 ----------------------------------------------------------------------
@@ -196,23 +202,11 @@ end
 ----------------------------------------------------------------------
 function moneyscript.onLeave(id)
 	--[[
-		If a player leaves the server then the script sets to nil
-		his txt value
+		If a player leaves the server then the script removes his
+		txt from him and from other players
 	]]--
+	moneyscript.clearPlayerFromOthers(id);
 	moneyscript.playersHudTxts[id] = nil;
-end
-
-----------------------------------------------------------------------
--- Returns the distance between 2 objects                           --
---                                                                  --
--- @param x1 object one x position                                  --
--- @param y1 object one y position                                  --
--- @param x2 object two x position                                  --
--- @param y2 object two y position                                  --
--- @return the distance betwenn the 2 objects                       --
-----------------------------------------------------------------------
-function moneyscript.getDist(x1, y1, x2, y2)
-	return math.sqrt((y2 - y1) ^ 2 + (x2 - x1) ^ 2);
 end
 
 
