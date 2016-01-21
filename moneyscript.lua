@@ -39,7 +39,13 @@ function moneyscript.onStartRound(mode)
 
 		addhook("ms100", "moneyscript.ms100");
 		addhook("leave", "moneyscript.onLeave");
+		addhook("team", "moneyscript.onTeam");
+
+		--> Forced restart, changing teams during freezetime
+		freetimer("moneyscript.freezeTimeEnd");
+
 		for _, id in pairs(player(0, "tableliving")) do
+			moneyscript.clearPlayerTxt(id);
 			moneyscript.playersHudTxts[id] = {};
 			for __, iid in pairs(player(0, "tableliving")) do
 				if(player(id, "team") == player(iid, "team")) then
@@ -64,6 +70,7 @@ end
 function moneyscript.freezeTimeEnd()
 	freehook("ms100", "moneyscript.ms100");
 	freehook("leave", "moneyscript.onLeave");
+	freehook("team", "moneyscript.onTeam");
 	moneyscript.clearAllTxts();
 end
 
@@ -220,4 +227,16 @@ function moneyscript.onLeave(id)
 
 	moneyscript.clearPlayerFromOthers(id);
 	moneyscript.playersHudTxts[id] = nil;
+end
+
+----------------------------------------------------------------------
+-- Team Hook Implementation                                         --
+--                                                                  --
+-- @param id player id                                              --
+-- @param team 0,1,2                                                --
+-- @param look id 0,1,2, 3                                          --
+----------------------------------------------------------------------
+function moneyscript.onTeam(id, team, look)
+	moneyscript.clearPlayerFromOthers(id);
+	return 0;
 end
