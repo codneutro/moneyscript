@@ -18,6 +18,7 @@ moneyscript.GREEN = string.char(169).."000255000";
 --     VARIABLES     -- 
 -----------------------
 moneyscript.playersHudTxts = {};
+parse("mp_hudscale 1")
 
 ----------------------------------------------------------------------
 -- StartRound Hook Implementation                                   --
@@ -35,7 +36,7 @@ function moneyscript.onStartRound(mode)
 	]]--
 
 	if(tonumber(game("mp_freezetime")) > 0) then
-		local winX, winY = 320, 240;
+		local winX, winY = 425, 240;
 
 		addhook("ms100", "moneyscript.ms100");
 		addhook("leave", "moneyscript.onLeave");
@@ -49,18 +50,15 @@ function moneyscript.onStartRound(mode)
 			moneyscript.playersHudTxts[id] = {};
 			for __, iid in pairs(player(0, "tableliving")) do
 				if(player(id, "team") == player(iid, "team")) then
-					winX = 320;
+					winX = 425;
 					winY = 240;
 					winX = winX - math.floor(player(id, "x") - player(iid, "x"));
 					winY = winY - math.floor(player(id, "y") - player(iid, "y"));
 					moneyscript.playersHudTxts[id][iid] =
-						moneyscript.hudtxt2(id, iid, player(iid, "money").."$",winX, winY - 32);
+						moneyscript.hudtxt2(id, iid, "$"..player(iid, "money"),winX, winY - 32);
 				end
 			end
 		end
-
-		timer((tonumber(game("mp_freezetime"))) * 1000, "moneyscript.freezeTimeEnd", 
-			"", 1);
 	end
 end
 
@@ -78,6 +76,14 @@ end
 -- ms100 function                                                   --
 ----------------------------------------------------------------------
 function moneyscript.ms100()
+
+	--[[
+		Checking if freeze time has ended
+	]]--
+	if tonumber(game("phase")) == 1 then
+		moneyscript.freezeTimeEnd()
+	end
+
 	--[[
 		Using this way, instead of buy hook which leaded to some 
 		problems
@@ -86,7 +92,7 @@ function moneyscript.ms100()
 	for _, pid in pairs(player(0, "tableliving")) do
 		for __, id in pairs(player(0, "tableliving")) do
 			if(player(pid, "team") == player(id, "team")) then
-				moneyscript.updatehudtxt2(pid, id, player(id, "money").."$");
+				moneyscript.updatehudtxt2(pid, id, "$"..player(id, "money"));
 			end
 		end
 	end
@@ -158,7 +164,7 @@ end
 function moneyscript.updatehudtxt2(pid, id, text)
 	if(moneyscript.playersHudTxts[pid]) then
 		if(moneyscript.playersHudTxts[pid][id]) then
-			local winX, winY = 320, 240;
+			local winX, winY = 425, 240;
 			winX = winX - math.floor(player(pid, "x") - player(id, "x"));
 			winY = winY - math.floor(player(pid, "y") - player(id, "y"));
 			moneyscript.playersHudTxts[pid][id] = 
@@ -238,5 +244,6 @@ end
 ----------------------------------------------------------------------
 function moneyscript.onTeam(id, team, look)
 	moneyscript.clearPlayerFromOthers(id);
+	moneyscript.clearPlayerTxt(id);
 	return 0;
 end
